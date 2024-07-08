@@ -8,3 +8,5 @@ minitorch/module.py
 project/run_manual.py
 project/run_scalar.py
 project/run_tensor.py
+requirements.txt
+requirements.extra.txt
