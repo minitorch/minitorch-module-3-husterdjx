@@ -227,8 +227,6 @@ def tensor_zip(
                 to_index(i, out_shape, out_index)
                 broadcast_index(out_index, out_shape, a_shape, a_index)
                 broadcast_index(out_index, out_shape, b_shape, b_index)
-                print("a_shape:", a_shape, "b_shape:", b_shape, "out_shape:", out_shape)
-                print("a_index:", a_index, "b_index:", b_index, "out_index:", out_index)
                 out[i] = fn(
                     a_storage[index_to_position(a_index, a_strides)],
                     b_storage[index_to_position(b_index, b_strides)],
@@ -334,8 +332,29 @@ def _tensor_matrix_multiply(
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
+    assert a_shape[-1] == b_shape[-2]
+    
+    for i in prange(len(out)):
+        out_index: Index = np.zeros(len(out_shape), dtype=np.int32)
+        tmp_i = i + 0
+        to_index(tmp_i, out_shape, out_index)
+        inner_loop = a_shape[-1]
+        for j in range(inner_loop):
+            tmp_j = j + 0
+            a_index: Index = np.zeros(len(a_shape), dtype=np.int32)
+            b_index: Index = np.zeros(len(b_shape), dtype=np.int32)
+            a_big_index = out_index.copy()
+            b_big_index = out_index.copy()
+            a_big_index[-1] = tmp_j
+            b_big_index[-2] = tmp_j
+            broadcast_index(a_big_index, out_shape, a_shape, a_index)
+            broadcast_index(b_big_index, out_shape, b_shape, b_index)
+            a_position = index_to_position(a_index, a_strides)
+            b_position = index_to_position(b_index, b_strides)
+            out[i] += a_storage[a_position] * b_storage[b_position]
+
     # TODO: Implement for Task 3.2.
-    raise NotImplementedError("Need to implement for Task 3.2")
+    # raise NotImplementedError("Need to implement for Task 3.2")
 
 
 tensor_matrix_multiply = njit(parallel=True, fastmath=True)(_tensor_matrix_multiply)
