@@ -65,9 +65,10 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
 
     """
     # TODO: Implement for Task 2.1.
-    for i in range(len(shape) - 1, -1, -1):
-        out_index[i] = ordinal % shape[i]
-        ordinal = ordinal // shape[i]
+    tmp_product = 1.0 # do not overwrite parallel loop index, see numba.core.errors.UnsupportedRewriteError
+    for i_ in range(len(shape) - 1, -1, -1):
+        out_index[i_] = int(ordinal % (shape[i_] * tmp_product) // tmp_product) # important
+        tmp_product *= shape[i_]
     # raise NotImplementedError("Need to implement for Task 2.1")
 
 

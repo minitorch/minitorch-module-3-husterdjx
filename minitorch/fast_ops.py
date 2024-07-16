@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 to_index = njit(inline="always")(to_index)
 index_to_position = njit(inline="always")(index_to_position)
 broadcast_index = njit(inline="always")(broadcast_index)
-shape_broadcast = njit(inline="always")(shape_broadcast)
+# shape_broadcast = njit(inline="always")(shape_broadcast)
 
 class FastOps(TensorOps):
     @staticmethod
@@ -161,21 +161,17 @@ def tensor_map(
         in_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1
-        eq_flag = True
-        for stride1, stride2 in zip(in_strides, out_strides):
-            if stride1 != stride2:
-                eq_flag = False
-                break
-        if eq_flag:
+        if np.array_equal(out_shape, in_shape) and np.array_equal(
+            out_strides, in_strides
+        ):
             for i in prange(len(out)):
                 out[i] = fn(in_storage[i])
         else:
-            broadcasted_input_shape = shape_broadcast(in_shape, out_shape)
             for i in prange(len(out)):
-                out_index: Index = np.zeros(out_shape)
-                in_index: Index = np.zeros(in_shape)
+                out_index: Index = np.zeros(MAX_DIMS, dtype=np.int32) # must have dtype, default is float64
+                in_index: Index = np.zeros(MAX_DIMS, dtype=np.int32)
                 to_index(i, out_shape, out_index)
-                broadcast_index(out_index, broadcasted_input_shape, in_shape, in_index)
+                broadcast_index(out_index, out_shape, in_shape, in_index)
                 out[i] = fn(in_storage[index_to_position(in_index, in_strides)])
         # raise NotImplementedError("Need to implement for Task 3.1")
 
@@ -216,24 +212,23 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        eq_flag = True
-        for stride1, stride2, stride3 in zip(out_strides, a_strides, b_strides):
-            if stride1 != stride2 or stride2 != stride3:
-                eq_flag = False
-                break
-        if eq_flag:
+        if np.array_equal(a_shape, b_shape) and np.array_equal(
+            a_strides, b_strides
+        ) and np.array_equal(out_shape, a_shape) and np.array_equal(
+            out_strides, a_strides
+        ):
             for i in prange(len(out)):
                 out[i] = fn(a_storage[i], b_storage[i])
         else:
-            broadcasted_a_shape = shape_broadcast(a_shape, out_shape)
-            broadcasted_b_shape = shape_broadcast(b_shape, out_shape)
-            out_index: Index = np.zeros(out_shape)
-            a_index: Index = np.zeros(a_shape)
-            b_index: Index = np.zeros(b_shape)
             for i in prange(len(out)):
+                out_index: Index = np.zeros(MAX_DIMS, dtype=np.int32)
+                a_index: Index = np.zeros(MAX_DIMS, dtype=np.int32)
+                b_index: Index = np.zeros(MAX_DIMS, dtype=np.int32)
                 to_index(i, out_shape, out_index)
-                broadcast_index(out_index, broadcasted_a_shape, a_shape, a_index)
-                broadcast_index(out_index, broadcasted_b_shape, b_shape, b_index)
+                broadcast_index(out_index, out_shape, a_shape, a_index)
+                broadcast_index(out_index, out_shape, b_shape, b_index)
+                print("a_shape:", a_shape, "b_shape:", b_shape, "out_shape:", out_shape)
+                print("a_index:", a_index, "b_index:", b_index, "out_index:", out_index)
                 out[i] = fn(
                     a_storage[index_to_position(a_index, a_strides)],
                     b_storage[index_to_position(b_index, b_strides)],
@@ -272,9 +267,13 @@ def tensor_reduce(
         reduce_dim: int,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        assert out_shape[reduce_dim] == 1
-        out_index: Index = np.zeros(out_shape)
+        assert (
+            len(out_shape) == len(a_shape)
+            and np.array_equal(out_shape[:reduce_dim], a_shape[:reduce_dim])
+            and np.array_equal(out_shape[reduce_dim + 1 :], a_shape[reduce_dim + 1 :])
+        )
         for i in prange(len(out)):
+            out_index: Index = np.zeros(MAX_DIMS, dtype=np.int32)
             to_index(i, out_shape, out_index)
             out_position = index_to_position(out_index, out_strides)
             a_index = out_index.copy()
