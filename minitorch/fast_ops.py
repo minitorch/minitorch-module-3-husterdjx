@@ -31,6 +31,7 @@ index_to_position = njit(inline="always")(index_to_position)
 broadcast_index = njit(inline="always")(broadcast_index)
 # shape_broadcast = njit(inline="always")(shape_broadcast)
 
+
 class FastOps(TensorOps):
     @staticmethod
     def map(fn: Callable[[float], float]) -> MapProto:
@@ -168,7 +169,9 @@ def tensor_map(
                 out[i] = fn(in_storage[i])
         else:
             for i in prange(len(out)):
-                out_index: Index = np.zeros(MAX_DIMS, dtype=np.int32) # must have dtype, default is float64
+                out_index: Index = np.zeros(
+                    MAX_DIMS, dtype=np.int32
+                )  # must have dtype, default is float64
                 in_index: Index = np.zeros(MAX_DIMS, dtype=np.int32)
                 to_index(i, out_shape, out_index)
                 broadcast_index(out_index, out_shape, in_shape, in_index)
@@ -212,10 +215,11 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        if np.array_equal(a_shape, b_shape) and np.array_equal(
-            a_strides, b_strides
-        ) and np.array_equal(out_shape, a_shape) and np.array_equal(
-            out_strides, a_strides
+        if (
+            np.array_equal(a_shape, b_shape)
+            and np.array_equal(a_strides, b_strides)
+            and np.array_equal(out_shape, a_shape)
+            and np.array_equal(out_strides, a_strides)
         ):
             for i in prange(len(out)):
                 out[i] = fn(a_storage[i], b_storage[i])
@@ -275,7 +279,7 @@ def tensor_reduce(
             to_index(i, out_shape, out_index)
             out_position = index_to_position(out_index, out_strides)
             a_index = out_index.copy()
-            tmp = a_storage[index_to_position(a_index, a_strides)] # 0 in reduce_dim
+            tmp = a_storage[index_to_position(a_index, a_strides)]  # 0 in reduce_dim
             for j in range(1, a_shape[reduce_dim]):
                 a_index[reduce_dim] = j
                 tmp = fn(
@@ -333,7 +337,7 @@ def _tensor_matrix_multiply(
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
     assert a_shape[-1] == b_shape[-2]
-    
+
     for i in prange(len(out)):
         out_index: Index = np.zeros(len(out_shape), dtype=np.int32)
         tmp_i = i + 0

@@ -65,9 +65,11 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
 
     """
     # TODO: Implement for Task 2.1.
-    tmp_product = 1.0 # do not overwrite parallel loop index, see numba.core.errors.UnsupportedRewriteError
+    tmp_product = 1.0  # do not overwrite parallel loop index, see numba.core.errors.UnsupportedRewriteError
     for i_ in range(len(shape) - 1, -1, -1):
-        out_index[i_] = int(ordinal % (shape[i_] * tmp_product) // tmp_product) # important
+        out_index[i_] = int(
+            ordinal % (shape[i_] * tmp_product) // tmp_product
+        )  # important
         tmp_product *= shape[i_]
     # raise NotImplementedError("Need to implement for Task 2.1")
 
@@ -94,7 +96,9 @@ def broadcast_index(
     # TODO: Implement for Task 2.2.
     for i in range(len(shape) - 1, -1, -1):
         offset = len(big_shape) - len(shape) + i
-        out_index[i] = big_index[offset] if shape[i] != 1 else 0 # 这里shape[i]要么为1要么就是big_shape[offset]
+        out_index[i] = (
+            big_index[offset] if shape[i] != 1 else 0
+        )  # 这里shape[i]要么为1要么就是big_shape[offset]
     # raise NotImplementedError("Need to implement for Task 2.2")
 
 

@@ -108,7 +108,9 @@ class Mul(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         # TODO: Implement for Task 2.4.
         a, b = ctx.saved_tensors
-        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(a, grad_output)
+        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(
+            a, grad_output
+        )
         # raise NotImplementedError("Need to implement for Task 2.4")
 
 
@@ -125,7 +127,10 @@ class Sigmoid(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
         # TODO: Implement for Task 2.4.
         sig = ctx.saved_values[0]
-        return grad_output.f.mul_zip(grad_output.f.mul_zip(sig, grad_output._ensure_tensor(1.0) - sig), grad_output)
+        return grad_output.f.mul_zip(
+            grad_output.f.mul_zip(sig, grad_output._ensure_tensor(1.0) - sig),
+            grad_output,
+        )
         # raise NotImplementedError("Need to implement for Task 2.4")
 
 
@@ -247,9 +252,11 @@ class Permute(Function):
         # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]: # 第一个是 Tensor 类型的梯度，第二个是与 order 对应的梯度
+    def backward(
+        ctx: Context, grad_output: Tensor
+    ) -> Tuple[Tensor, float]:  # 第一个是 Tensor 类型的梯度，第二个是与 order 对应的梯度
         # TODO: Implement for Task 2.4.
-        (order, ) = ctx.saved_values
+        (order,) = ctx.saved_values
         ori_order_map = {order[i]: i for i in range(len(order))}
         ori_order = [ori_order_map[i] for i in range(len(order))]
         return grad_output._new(grad_output._tensor.permute(*ori_order)), 0.0
