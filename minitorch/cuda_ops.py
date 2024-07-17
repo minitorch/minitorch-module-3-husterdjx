@@ -307,25 +307,25 @@ def tensor_reduce(
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-        if out_pos >= out_size:
-            return
-        reduce_dim_size = a_shape[reduce_dim]
-        to_index(out_pos, out_shape, out_index)
-        to_index(out_pos, out_shape, a_index)
-        a_index[reduce_dim] = pos
-        if pos < reduce_dim_size:
-            cache[pos] = a_storage[index_to_position(a_index, a_strides)]
-        else:
-            cache[pos] = 0.0
-        cuda.syncthreads()
+        # if out_pos >= out_size:
+        #     return
+        # reduce_dim_size = a_shape[reduce_dim]
+        # to_index(out_pos, out_shape, out_index)
+        # to_index(out_pos, out_shape, a_index)
+        # a_index[reduce_dim] = pos
+        # if pos < reduce_dim_size:
+        #     cache[pos] = a_storage[index_to_position(a_index, a_strides)]
+        # else:
+        #     cache[pos] = 0.0
+        # cuda.syncthreads()
         # naive
-        if pos == 0:
-            for i in range(1, reduce_dim_size):
-                a_index[reduce_dim] = i
-                cache[0] = fn(
-                    a_storage[index_to_position(a_index, a_strides)], cache[0]
-                )
-            out[out_pos] = cache[0]
+        # if pos == 0:
+        #     for i in range(1, reduce_dim_size):
+        #         a_index[reduce_dim] = i
+        #         cache[0] = fn(
+        #             a_storage[index_to_position(a_index, a_strides)], cache[0]
+        #         )
+        #     out[out_pos] = cache[0]
 
         # parallel
         # index = 1
@@ -339,6 +339,18 @@ def tensor_reduce(
         # if pos == 0:
         #     out[out_pos] = cache[0]
         # TODO: Implement for Task 3.3.
+        
+        # other
+        if i < len(out):
+            to_index(i, out_shape, out_index)
+            out_index[reduce_dim] = 0
+            out_pos = index_to_position(out_index, out_strides)
+            cache[pos] = reduce_value
+            for j in range(a_shape[reduce_dim]):
+                out_index[reduce_dim] = j
+                a_pos = index_to_position(out_index, a_strides)
+                cache[pos] = fn(cache[pos], a_storage[a_pos])
+            out[out_pos] = cache[pos]
         # raise NotImplementedError("Need to implement for Task 3.3")
 
     return cuda.jit()(_reduce)  # type: ignore
